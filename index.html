@@ -105,11 +105,16 @@
     <button type="submit" id="submitBtn" disabled>注文を送信</button>
   </form>
 
+<!-- 注文フォームの後に追加 -->
+<p id="thanksMessage" style="display:none; color: #d86c9b; text-align: center; margin-top: 10px;">
+  ご注文ありがとうございました。
+</p>
+
   <script>
     const form = document.getElementById('orderForm');
     const submitBtn = document.getElementById('submitBtn');
 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxpcMJN5Og6QD5F7bSHAYVLG1hYbU8CL8uW_-MsPViN83QWeuQ1Q1U23LdZBDTVFmwOlA/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxGmN3Kl5TLfgfQMnrxzg3l2IZTcEjQhPU-p0QJjob-55tw-7tzkZeYf1J3rDL74mhFlA/exec";
 
     form.addEventListener('change', () => {
       const hasOrder =
@@ -121,6 +126,7 @@
       const hasTable = form.table.value !== "";
 
       submitBtn.disabled = !(hasOrder && hasTable);
+      document.getElementById('thanksMessage').style.display = 'none';
     });
 
     form.addEventListener('submit', (e) => {
@@ -134,20 +140,23 @@
         drink: form.drink.value,
         message: form.message.value.trim()
       };
-
+     
       fetch(GAS_URL, {
         method: "POST",
+        mode: "no-cors", // 応答を見たい場合は "cors" にし、GAS側の応答ヘッダ対応も必要
         body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json"
         }
       })
-      .then(res => res.json())
       .then(response => {
-        alert("ご注文ありがとうございました！");
-        form.reset();
-        submitBtn.disabled = true;
-      })
+  console.log(response); // ← デバッグ用
+  alert("ご注文ありがとうございました！");
+    form.reset();
+  submitBtn.disabled = true;
+  document.getElementById('thanksMessage').style.display = 'block';
+})
+
       .catch(error => {
         alert("送信エラーが発生しました。");
         console.error(error);
