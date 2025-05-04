@@ -55,10 +55,24 @@
       background: #f0b6d1;
       cursor: not-allowed;
     }
+
+    .submit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* ボタンとメッセージの間隔 */
+  margin-top: 20px;
+}
+
+#thanksMessage {
+  display: none;
+  color: #0f0e0f;
+  font-size: 1.2em;
+}
+
   </style>
 </head>
 <body>
-  <h1>スイーツカフェ セルフオーダー</h1>
+  <h1>スイーツカフェ セルフオーダー(supabase)</h1>
   <form id="orderForm">
     <label for="table">テーブル番号</label>
     <select id="table" name="table" required>
@@ -102,66 +116,73 @@
     <label for="message">お店への連絡</label>
     <textarea id="message" name="message" placeholder="アレルギー、テーブル上の要望など"></textarea>
 
-    <button type="submit" id="submitBtn" disabled>注文を送信</button>
+    <div class="submit-row">
+      <button type="submit" id="submitBtn" disabled>注文を送信</button>
+      <p id="thanksMessage">ご注文ありがとうございました。</p>
+    </div>
+    
   </form>
 
-<!-- 注文フォームの後に追加 -->
-<p id="thanksMessage" style="display:none; color: #d86c9b; text-align: center; margin-top: 10px;">
-  ご注文ありがとうございました。
-</p>
-
-  <script>
+<script>
     const form = document.getElementById('orderForm');
     const submitBtn = document.getElementById('submitBtn');
-
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxGmN3Kl5TLfgfQMnrxzg3l2IZTcEjQhPU-p0QJjob-55tw-7tzkZeYf1J3rDL74mhFlA/exec";
-
+  
+    const SUPABASE_URL = "https://sdgdgkolzvymvhtwccyh.supabase.co";//https://sdgdgkolzvymvhtwccyh.supabase.co
+    const SUPABASE_TABLE = "orders"; // ← 作成したテーブル名に合わせて変更
+    const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkZ2Rna29senZ5bXZodHdjY3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1OTkwMzEsImV4cCI6MjA1ODE3NTAzMX0.YFWg6dpsmC-msTlk9j4a8smc0TnZB2eI3l0HhF1GLH8"; // SupabaseのAnonキー
+  
     form.addEventListener('change', () => {
       const hasOrder =
         parseInt(form.parfait.value) > 0 ||
         parseInt(form.special.value) > 0 ||
         parseInt(form.plate.value) > 0 ||
         form.drink.value !== "0";
-
+  
       const hasTable = form.table.value !== "";
-
+  
       submitBtn.disabled = !(hasOrder && hasTable);
       document.getElementById('thanksMessage').style.display = 'none';
     });
-
-    form.addEventListener('submit', (e) => {
+  
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
+  
       const data = {
-        table: form.table.value,
-        parfait: form.parfait.value,
-        special: form.special.value,
-        plate: form.plate.value,
-        drink: form.drink.value,
-        message: form.message.value.trim()
-      };
-     
-      fetch(GAS_URL, {
-        method: "POST",
-        mode: "no-cors", // 応答を見たい場合は "cors" にし、GAS側の応答ヘッダ対応も必要
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json"
+  table_number: form.table.value, // ← 変更
+  parfait: parseInt(form.parfait.value),
+  special: parseInt(form.special.value),
+  plate: parseInt(form.plate.value),
+  drink: form.drink.value,
+  message: form.message.value.trim()
+};
+  
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_API_KEY,
+            "Authorization": `Bearer ${SUPABASE_API_KEY}`,
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify(data)
+        });
+  
+        if (response.ok) {
+          alert("ご注文ありがとうございました！");
+          form.reset();
+          submitBtn.disabled = true;
+          document.getElementById('thanksMessage').style.display = 'block';
+        } else {
+          alert("送信エラーが発生しました。");
+          console.error(await response.text());
         }
-      })
-      .then(response => {
-  console.log(response); // ← デバッグ用
-  alert("ご注文ありがとうございました！");
-    form.reset();
-  submitBtn.disabled = true;
-  document.getElementById('thanksMessage').style.display = 'block';
-})
-
-      .catch(error => {
-        alert("送信エラーが発生しました。");
+      } catch (error) {
+        alert("通信エラーが発生しました。");
         console.error(error);
-      });
+      }
     });
   </script>
+  
 </body>
 </html>
